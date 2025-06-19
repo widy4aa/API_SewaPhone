@@ -8,3 +8,4 @@ Werkzeug==1.0.1
 requests
 pyproject-toml
 psycopg2-binary
+flask_jwt_extended

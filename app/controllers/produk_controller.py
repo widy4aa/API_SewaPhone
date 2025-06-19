@@ -8,7 +8,7 @@ from datetime import datetime
 import requests
 from koneksi import get_db
 
-GITHUB_TOKEN = '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'
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 REPO_OWNER = 'widy4aa'
 REPO_NAME = 'dump_image'
 BRANCH = 'main'

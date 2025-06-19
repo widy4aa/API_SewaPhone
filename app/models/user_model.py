@@ -40,7 +40,7 @@ class User:
         conn = get_db()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
-        hashed_password = generate_password_hash(data['pass'])
+        hashed_password = generate_password_hash(data['pass'],method='pbkdf2:sha256')
 
         query = """
             INSERT INTO users (

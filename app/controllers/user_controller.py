@@ -49,3 +49,22 @@ def read_user_from_jwt(jwt_identity):
     except Exception as e:
         return jsonify({"error": "Terjadi kesalahan pada server", "details": str(e)}), 500
     
+    
+def update_user_profile(user_id,data):
+    try:
+        for field in ['pass', 'point', 'role', 'status', 'id']:
+            if field in data:
+                del data[field]
+        
+        if not data:
+            return jsonify({"success": False, "error": "Tidak ada data valid untuk diperbarui."}), 400
+
+        response, status_code = User.edit(user_id, data)
+
+        if response.get("success") and 'user' in response and 'pass' in response['user']:
+            del response['user']['pass']
+            
+        return jsonify(response), status_code
+
+    except Exception as e:
+        return jsonify({"success": False, "error": "Terjadi kesalahan internal pada server", "details": str(e)}), 500

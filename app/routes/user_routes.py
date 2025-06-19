@@ -1,7 +1,13 @@
 from flask import Blueprint, jsonify, request
-from app.controllers.user_controller import read_all_user,read_user,create_user,read_user_from_jwt
 from flask_jwt_extended import jwt_required, get_jwt_identity 
 from decorators import role_required
+from app.controllers.user_controller import (
+    read_all_user,
+    read_user,
+    read_user_from_jwt,
+    update_user_profile,
+    
+)
 
 
 user_bp = Blueprint('user_bp', __name__)
@@ -23,3 +29,9 @@ def get_users_by_id(id):
 def get_user_profile():
     return read_user_from_jwt(get_jwt_identity())
     
+
+@user_bp.route('/me', methods=['PUT'])
+@jwt_required()
+def put_user_profile():
+    return update_user_profile(get_jwt_identity(),request.get_json())
+

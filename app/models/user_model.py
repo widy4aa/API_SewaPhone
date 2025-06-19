@@ -1,6 +1,7 @@
 from koneksi import get_db
 import psycopg2
 import psycopg2.extras
+from psycopg2.extras import DictCursor 
 from psycopg2 import errors as pg_errors 
 from werkzeug.security import generate_password_hash
 import datetime
@@ -166,6 +167,71 @@ class User:
             cursor.close()
             print(f"Error verifying registration OTP: {e}") 
             return {"success": False, "error": "Terjadi kesalahan internal server. Silakan coba lagi nanti."}, 500
+        finally:
+            if cursor and not cursor.closed:
+                cursor.close()
+            if conn and not conn.closed:
+                conn.close()
+                
+    @staticmethod
+    def edit(user_id, data):
+        conn = None
+        cursor = None
+        editable_fields = ['username', 'nama', 'email', 'no_telp', 'point']
+        update_clauses = []
+        query_values = []
+
+        for field in editable_fields:
+            if field in data and data[field] is not None:
+                update_clauses.append(f"{field} = %s")
+                query_values.append(data[field])
+
+        if 'pass' in data and data['pass']:
+            hashed_password = generate_password_hash(data['pass'], method='pbkdf2:sha256')
+            update_clauses.append("pass = %s")
+            query_values.append(hashed_password)
+            
+        if not update_clauses:
+            return {"success": False, "error": "Tidak ada data untuk diperbarui."}, 400
+
+        query_values.append(user_id)
+
+        query = f"""
+            UPDATE users
+            SET {', '.join(update_clauses)}
+            WHERE id = %s
+            RETURNING *;
+        """
+
+        try:
+            conn = get_db()
+            cursor = conn.cursor(cursor_factory=DictCursor)
+            
+            cursor.execute(query, tuple(query_values))
+            updated_user = cursor.fetchone()
+
+            if not updated_user:
+                conn.rollback()
+                return {"success": False, "error": "User dengan ID tersebut tidak ditemukan."}, 404
+
+            conn.commit()
+            return {"success": True, "message": "Data user berhasil diperbarui.", "user": dict(updated_user)}, 200
+
+        except pg_errors.UniqueViolation as e:
+            conn.rollback()
+            error_message = "Terjadi konflik data duplikat."
+            if "unique_username" in str(e).lower():
+                error_message = "Username sudah terdaftar. Silakan gunakan username lain."
+            elif "unique_email" in str(e).lower(): 
+                error_message = "Email sudah terdaftar. Silakan gunakan email lain."
+            return {"success": False, "error": error_message}, 409
+        
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            print(f"Terjadi kesalahan tak terduga saat mengedit user: {e}")
+            return {"success": False, "error": "Terjadi kesalahan internal server. Silakan coba lagi nanti."}, 500
+        
         finally:
             if cursor and not cursor.closed:
                 cursor.close()

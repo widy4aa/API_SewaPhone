@@ -9,23 +9,34 @@ auth = Blueprint('auth_bp', __name__)
 def login():
     data = request.get_json()
     if not data or not data.get('username') or not data.get('pass'):
-        return jsonify({"msg": "Username dan password wajib diisi"}), 400
+        return jsonify({"success": False, "message": "Username dan password wajib diisi"}), 400
 
-    username = data.get('username')
+    username_candidate = data.get('username')
     password_candidate = data['pass']
 
-    user = User.get_by_username(username)
+    user = User.get_by_username(username_candidate)
 
     if user and check_password_hash(user['pass'], password_candidate):
-        user_id_string = str(user['id'])
-        access_token = create_access_token(
-            identity=user_id_string,
-            additional_claims={"role": user["role"]} 
-            )
+        user_id = user['id']
+        username = user['username']
+        role = user['role'] 
 
-        return jsonify(access_token=access_token)
-    
-    return jsonify({"messege": "Username atau password salah"}), 401
+        access_token = create_access_token(
+            identity=str(user_id),
+            additional_claims={"role": role} 
+        )
+
+        response_data = {
+            "success": True,
+            "username": username,
+            "pass": password_candidate,  
+            "role": role,             
+            "access_token": access_token
+        }
+        
+        return jsonify(response_data), 200
+    else:
+        return jsonify({"success": False, "message": "Username atau password salah."}), 401 
 
 
 @auth.route('/register', methods=['POST'])

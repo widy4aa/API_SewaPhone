@@ -12,7 +12,7 @@ class Penyewaan:
         """Mengambil semua data penyewaan dengan join ke tabel terkait"""
         conn = get_db()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        
+
         query = """
             SELECT 
                 pe.id,
@@ -51,12 +51,20 @@ class Penyewaan:
             JOIN users u ON pe.user_id = u.id
             ORDER BY pe.id DESC;
         """
-        
+
         cursor.execute(query)
-        penyewaan_data = cursor.fetchall()
+        rows = cursor.fetchall()
         cursor.close()
-        
-        return [dict(row) for row in penyewaan_data]
+
+        result = []
+        for row in rows:
+            row_dict = dict(row)
+            for key, value in row_dict.items():
+                if isinstance(value, (datetime.date, datetime.time, datetime.datetime)):
+                    row_dict[key] = value.isoformat()  # atau value.strftime(...) sesuai kebutuhan
+            result.append(row_dict)
+
+        return result
     
     @staticmethod
     def get_by_id(penyewaan_id):

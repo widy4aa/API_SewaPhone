@@ -42,7 +42,7 @@ class Penyewaan:
                 u.email,
                 u.no_telp,
                 u.point,
-                u.img_link_pp,
+                u.pp_img_link,
                 u.status AS user_status,
                 u.role
             FROM penyewaan pe
@@ -93,7 +93,7 @@ class Penyewaan:
                 u.email,
                 u.no_telp,
                 u.point,
-                u.img_link_pp,
+                u.pp_img_link,
                 u.status AS user_status,
                 u.role
             FROM penyewaan pe
@@ -319,7 +319,7 @@ class Penyewaan:
                 u.email,
                 u.no_telp,
                 u.point,
-                u.img_link_pp,
+                u.pp_img_link,
                 u.status AS user_status,
                 u.role
             FROM penyewaan pe
@@ -371,7 +371,7 @@ class Penyewaan:
                 u.email,
                 u.no_telp,
                 u.point,
-                u.img_link_pp,
+                u.pp_img_link,
                 u.status AS user_status,
                 u.role
             FROM penyewaan pe

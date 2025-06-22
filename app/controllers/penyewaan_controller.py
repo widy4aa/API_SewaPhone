@@ -7,6 +7,8 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 import requests
 from koneksi import get_db
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 REPO_OWNER = 'widy4aa'
@@ -15,7 +17,6 @@ BRANCH = 'main'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 def read_all_penyewaan():
-    """Mengambil semua data penyewaan"""
     try:
         penyewaans = Penyewaan.get_all()
         return jsonify({
@@ -28,7 +29,6 @@ def read_all_penyewaan():
         return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
 
 def read_penyewaan(id):
-    """Mengambil data penyewaan berdasarkan ID"""
     try:
         penyewaan = Penyewaan.get_by_id(id)
         if not penyewaan:
@@ -43,7 +43,6 @@ def read_penyewaan(id):
         return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
 
 def search_penyewaan_by_user():
-    """Mencari penyewaan berdasarkan nama user"""
     try:
         nama_user = request.args.get('nama_user', '')
         if not nama_user:
@@ -60,7 +59,6 @@ def search_penyewaan_by_user():
         return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
 
 def read_penyewaan_by_status():
-    """Mengambil penyewaan berdasarkan status"""
     try:
         status = request.args.get('status', '')
         if not status:
@@ -81,7 +79,6 @@ def read_penyewaan_by_status():
         return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
 
 def read_penyewaan_by_user_id():
-    """Mengambil penyewaan berdasarkan user ID"""
     try:
         user_id = request.args.get('user_id', '')
         if not user_id:
@@ -96,14 +93,31 @@ def read_penyewaan_by_user_id():
         }), 200
     except Exception as e:
         return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
+   
+@jwt_required()   
+def read_penyewaan_user():
+    try:
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({"error": "Parameter user_id diperlukan"}), 400
+        
+        penyewaans = Penyewaan.get_by_user_id(user_id)
+        return jsonify({
+            "status": "success",
+            "message": f"Data penyewaan untuk user ID {user_id} berhasil diambil",
+            "data": penyewaans,
+            "count": len(penyewaans)
+        }), 200
+    except Exception as e:
+        return jsonify({"error": f"An unexpected error occurred: {e}"}), 500
+    
+
 
 def allowed_file(filename):
-    """Check if file extension is allowed"""
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def upload_to_github(file):
-    """Upload file to GitHub and return public URL"""
     try:
         filename = secure_filename(file.filename)
         unique_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{filename}"
@@ -130,32 +144,30 @@ def upload_to_github(file):
     except Exception as e:
         raise e
 
+@jwt_required()
 def create_penyewaan():
-    """Membuat penyewaan baru"""
     try:
-        # Validasi field yang diperlukan
-        required_fields = ['produk_id', 'user_id', 'tanggal_mulai', 'tanggal_selesai', 'metode']
+        # Ambil user_id dari JWT, bukan dari request.form
+        user_id = get_jwt_identity()
+
+        required_fields = ['produk_id', 'tanggal_mulai', 'tanggal_selesai', 'metode']
         for field in required_fields:
             if field not in request.form or not request.form[field]:
                 return jsonify({"error": f"Field {field} is required"}), 400
 
-        # Validasi metode
         metode = request.form['metode']
         valid_methods = ['cod', 'ambil_di_toko']
         if metode not in valid_methods:
             return jsonify({"error": f"Metode tidak valid. Metode yang valid: {valid_methods}"}), 400
 
-        # Validasi dan konversi tanggal
         try:
             tanggal_mulai = datetime.strptime(request.form['tanggal_mulai'], '%Y-%m-%d').date()
             tanggal_selesai = datetime.strptime(request.form['tanggal_selesai'], '%Y-%m-%d').date()
-            
             if tanggal_selesai <= tanggal_mulai:
                 return jsonify({"error": "Tanggal selesai harus setelah tanggal mulai"}), 400
         except ValueError:
             return jsonify({"error": "Format tanggal tidak valid. Gunakan format YYYY-MM-DD"}), 400
 
-        # Handle upload selfie KTP jika ada
         selfie_ktp_url = None
         if 'selfie_ktp' in request.files and request.files['selfie_ktp'].filename != '':
             file = request.files['selfie_ktp']
@@ -163,7 +175,6 @@ def create_penyewaan():
                 return jsonify({"error": "Tipe file selfie KTP tidak valid"}), 400
             selfie_ktp_url = upload_to_github(file)
 
-        # Parse data lainnya
         jam_cod = request.form.get('jam_cod')
         if jam_cod:
             try:
@@ -178,10 +189,9 @@ def create_penyewaan():
         if longitude:
             longitude = float(longitude)
 
-        # Buat penyewaan baru
         new_penyewaan = Penyewaan.create(
             produk_id=int(request.form['produk_id']),
-            user_id=int(request.form['user_id']),
+            user_id=int(user_id),
             tanggal_mulai=tanggal_mulai,
             tanggal_selesai=tanggal_selesai,
             metode=metode,
@@ -190,7 +200,7 @@ def create_penyewaan():
             longitude=longitude,
             selfie_ktp=selfie_ktp_url
         )
-        
+
         return jsonify({
             "status": "success",
             "message": "Penyewaan berhasil dibuat",
@@ -206,9 +216,8 @@ def create_penyewaan():
         return jsonify({"error": str(ve)}), 400
     except Exception as e:
         return jsonify({"error": f"Gagal membuat penyewaan: {str(e)}"}), 500
-
+    
 def update_penyewaan(penyewaan_id):
-    """Update data penyewaan"""
     try:
         if not request.form and not request.files:
             return jsonify({"error": "Tidak ada data yang dikirim"}), 400

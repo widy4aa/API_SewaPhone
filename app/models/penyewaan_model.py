@@ -5,11 +5,18 @@ from psycopg2 import errors as pg_errors
 from werkzeug.security import generate_password_hash
 import datetime
 
+
+def serialize_row(row):
+    row_dict = dict(row)
+    for key, value in row_dict.items():
+        if isinstance(value, (datetime.date, datetime.time, datetime.datetime)):
+            row_dict[key] = value.isoformat()
+    return row_dict
+
 class Penyewaan:
     
     @staticmethod
     def get_all():
-        """Mengambil semua data penyewaan dengan join ke tabel terkait"""
         conn = get_db()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -56,15 +63,8 @@ class Penyewaan:
         rows = cursor.fetchall()
         cursor.close()
 
-        result = []
-        for row in rows:
-            row_dict = dict(row)
-            for key, value in row_dict.items():
-                if isinstance(value, (datetime.date, datetime.time, datetime.datetime)):
-                    row_dict[key] = value.isoformat()  # atau value.strftime(...) sesuai kebutuhan
-            result.append(row_dict)
+        return [serialize_row(row) for row in rows]
 
-        return result
     
     @staticmethod
     def get_by_id(penyewaan_id):
@@ -116,7 +116,7 @@ class Penyewaan:
         cursor.close()
         
         if penyewaan_data:
-            return dict(penyewaan_data)
+            return serialize_row(penyewaan_data)
         return None
     
     @staticmethod
@@ -170,7 +170,8 @@ class Penyewaan:
         penyewaan_data = cursor.fetchall()
         cursor.close()
         
-        return [dict(row) for row in penyewaan_data]
+        return [serialize_row(row) for row in penyewaan_data]
+
     
     @staticmethod
     def create(produk_id, user_id, tanggal_mulai, tanggal_selesai, metode, 
@@ -194,7 +195,7 @@ class Penyewaan:
                 user_id,
                 tanggal_mulai,
                 tanggal_selesai,
-                'menunggu_persetujuan',  # Status default
+                'menunggu_persetujuan',  
                 metode,
                 jam_cod,
                 latitude,
@@ -205,7 +206,6 @@ class Penyewaan:
             new_penyewaan_id = cursor.fetchone()[0]
             conn.commit()
             
-            # Kembalikan data lengkap penyewaan yang baru dibuat
             return Penyewaan.get_by_id(new_penyewaan_id)
             
         except Exception as e:
@@ -342,7 +342,7 @@ class Penyewaan:
         penyewaan_data = cursor.fetchall()
         cursor.close()
         
-        return [dict(row) for row in penyewaan_data]
+        return [serialize_row(row) for row in penyewaan_data]
     
     @staticmethod
     def get_by_user_id(user_id):
@@ -394,7 +394,8 @@ class Penyewaan:
         penyewaan_data = cursor.fetchall()
         cursor.close()
         
-        return [dict(row) for row in penyewaan_data]
+        return [serialize_row(row) for row in penyewaan_data]
+
     
     @staticmethod
     def delete(penyewaan_id):

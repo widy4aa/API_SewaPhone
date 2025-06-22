@@ -68,4 +68,3 @@ def update_existing_penyewaan(penyewaan_id):
 @jwt_required()
 def update_status(penyewaan_id):
     return update_status_penyewaan(penyewaan_id)
-

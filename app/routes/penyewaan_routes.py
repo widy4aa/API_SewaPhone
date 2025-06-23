@@ -24,7 +24,6 @@ def get_all_penyewaan():
 
 @penyewaan.route('/<int:penyewaan_id>', methods=['GET'])
 @jwt_required()
-@role_required('admin')
 def get_penyewaan_by_id(penyewaan_id):
     return read_penyewaan(penyewaan_id)
 

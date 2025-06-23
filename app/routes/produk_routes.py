@@ -7,6 +7,7 @@ from app.controllers.produk_controller import read_all_produk,read_popular_produ
 produk_bp = Blueprint('produk_bp', __name__)
 
 @produk_bp.route('/', methods=['GET'])
+@jwt_required()
 def get_produk_route():
     return read_all_produk()
 

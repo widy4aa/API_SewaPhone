@@ -50,7 +50,7 @@ def update_user_profile_img():
     return update_my_profile_picture()
 
 
-@user_bp.route('/users/<int:user_id>/point', methods=['PUT'])
+@user_bp.route('/<int:user_id>/point', methods=['PUT'])
 @jwt_required()
 @role_required('admin')
 def update_user_point_by_id_route(user_id):

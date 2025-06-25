@@ -240,13 +240,10 @@ class User:
 
     @staticmethod
     def get_profile_picture(user_id):
-        """
-        Mengambil link gambar profil (pp_link_img) untuk user tertentu.
-        """
         conn = get_db()
         cursor = conn.cursor(cursor_factory=DictCursor)
         try:
-            query = "SELECT pp_link_img FROM users WHERE id = %s;"
+            query = "SELECT pp_img_link FROM users WHERE id = %s;"
             cursor.execute(query, (user_id,))
             result = cursor.fetchone()
             if result:

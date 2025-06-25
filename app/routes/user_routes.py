@@ -7,7 +7,8 @@ from app.controllers.user_controller import (
     read_user_from_jwt,
     update_user_profile,
     update_my_profile_picture,
-    get_user_profile_picture
+    get_user_profile_picture,
+    update_user_point_by_id
 )
 
 
@@ -47,3 +48,10 @@ def get_user_profle_img():
 @jwt_required()
 def update_user_profile_img():
     return update_my_profile_picture()
+
+
+@user_bp.route('/users/<int:user_id>/point', methods=['PUT'])
+@jwt_required()
+@role_required('admin')
+def update_user_point_by_id_route(user_id):
+    return update_user_point_by_id(user_id)

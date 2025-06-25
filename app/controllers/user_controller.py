@@ -134,3 +134,22 @@ def update_my_profile_picture():
         return jsonify(result), status_code
     except Exception as e:
         return jsonify({"success": False, "error": f"Gagal memperbarui foto profil: {str(e)}"}), 500
+
+
+@jwt_required()
+def update_user_point_by_id(user_id):
+    try:
+        data = request.get_json()
+
+        if not data or 'point' not in data:
+            return jsonify({"success": False, "error": "Field 'point' wajib dikirim."}), 400
+
+        new_point = data['point']
+        if not isinstance(new_point, int):
+            return jsonify({"success": False, "error": "Field 'point' harus berupa angka (integer)."}), 400
+
+        result, status_code = User.edit_point_only(user_id, new_point)
+        return jsonify(result), status_code
+
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Gagal memperbarui poin: {str(e)}"}), 500

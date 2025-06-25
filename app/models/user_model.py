@@ -259,39 +259,36 @@ class User:
             if conn and not conn.closed:
                 conn.close()
 
+
     @staticmethod
-    def update_profile_picture(user_id, pp_img_link):
-        """
-        Memperbarui link gambar profil (pp_img_link) untuk user tertentu.
-        """
+    def edit_point_only(user_id, new_point):
         conn = get_db()
         cursor = conn.cursor(cursor_factory=DictCursor)
+
         try:
-            query = """
+            cursor.execute("""
                 UPDATE users
-                SET pp_img_link = %s
+                SET point = %s
                 WHERE id = %s
-                RETURNING id, username, pp_img_link;
-            """
-            
-            print(query)
-            cursor.execute(query, (pp_img_link, user_id))
+                RETURNING id, username, point;
+            """, (new_point, user_id))
+
             updated_user = cursor.fetchone()
-            
+
             if not updated_user:
                 conn.rollback()
                 return {"success": False, "error": "User dengan ID tersebut tidak ditemukan."}, 404
 
             conn.commit()
-            return {"success": True, "message": "Foto profil berhasil diperbarui.", "user": dict(updated_user)}, 200
-            
+            return {"success": True, "message": "Point user berhasil diperbarui.", "user": dict(updated_user)}, 200
+
         except Exception as e:
-            if conn:
-                conn.rollback()
-            print(f"Terjadi kesalahan tak terduga saat memperbarui foto profil: {e}")
+            conn.rollback()
+            print(f"Terjadi kesalahan saat memperbarui point user: {e}")
             return {"success": False, "error": "Terjadi kesalahan internal server. Silakan coba lagi nanti."}, 500
+
         finally:
-            if cursor and not cursor.closed:
-                cursor.close()
-            if conn and not conn.closed:
-                conn.close()
+            cursor.close()
+            conn.close()
+
+

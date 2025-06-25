@@ -16,7 +16,7 @@ def create_app():
     app.register_blueprint(produk_bp, url_prefix='/api/produk/')
     app.register_blueprint(penyewaan, url_prefix='/api/penyewaan/')
     app.config.from_mapping(
-    JWT_SECRET_KEY="kunci-rahasia-super-aman-yang-tidak-boleh-diketahui-siapapun",
+    JWT_SECRET_KEY="a9f3c5d68c70e1435f2e8ac4939fc79ab35c5d4a9d8e7c6ff0482b6b85b7c86f",
     
 
 )

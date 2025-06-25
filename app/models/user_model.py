@@ -237,3 +237,62 @@ class User:
                 cursor.close()
             if conn and not conn.closed:
                 conn.close()
+
+    @staticmethod
+    def get_profile_picture(user_id):
+        """
+        Mengambil link gambar profil (pp_link_img) untuk user tertentu.
+        """
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        try:
+            query = "SELECT pp_link_img FROM users WHERE id = %s;"
+            cursor.execute(query, (user_id,))
+            result = cursor.fetchone()
+            if result:
+                return {"success": True, "data": result}, 200
+            else:
+                return {"success": False, "error": "User tidak ditemukan."}, 404
+        except Exception as e:
+            print(f"Error getting profile picture: {e}")
+            return {"success": False, "error": "Internal server error"}, 500
+        finally:
+            if cursor and not cursor.closed:
+                cursor.close()
+            if conn and not conn.closed:
+                conn.close()
+
+    @staticmethod
+    def update_profile_picture(user_id, pp_link_img):
+        """
+        Memperbarui link gambar profil (pp_link_img) untuk user tertentu.
+        """
+        conn = get_db()
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        try:
+            query = """
+                UPDATE users
+                SET pp_link_img = %s
+                WHERE id = %s
+                RETURNING id, username, pp_link_img;
+            """
+            cursor.execute(query, (pp_link_img, user_id))
+            updated_user = cursor.fetchone()
+            
+            if not updated_user:
+                conn.rollback()
+                return {"success": False, "error": "User dengan ID tersebut tidak ditemukan."}, 404
+
+            conn.commit()
+            return {"success": True, "message": "Foto profil berhasil diperbarui.", "user": dict(updated_user)}, 200
+            
+        except Exception as e:
+            if conn:
+                conn.rollback()
+            print(f"Terjadi kesalahan tak terduga saat memperbarui foto profil: {e}")
+            return {"success": False, "error": "Terjadi kesalahan internal server. Silakan coba lagi nanti."}, 500
+        finally:
+            if cursor and not cursor.closed:
+                cursor.close()
+            if conn and not conn.closed:
+                conn.close()

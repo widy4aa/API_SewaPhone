@@ -6,7 +6,8 @@ from app.controllers.user_controller import (
     read_user,
     read_user_from_jwt,
     update_user_profile,
-    
+    update_my_profile_picture,
+    get_user_profile_picture
 )
 
 
@@ -35,3 +36,14 @@ def get_user_profile():
 def put_user_profile():
     return update_user_profile(get_jwt_identity(),request.get_json())
 
+@user_bp.route('/me/profile-picture', methods=['GET'])
+@jwt_required()
+def get_user_profle_img():
+    return get_user_profile_picture(get_jwt_identity())
+
+
+
+@user_bp.route('/me/profile-picture', methods=['POST'])
+@jwt_required()
+def update_user_profile_img():
+    return get_user_profile_picture(get_jwt_identity())

@@ -1,6 +1,19 @@
 from flask import jsonify
 from app.models.user_model import User
 from psycopg2 import errors
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import request, jsonify
+import os
+import requests
+import base64
+from werkzeug.utils import secure_filename
+from datetime import datetime
+
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+REPO_OWNER = 'widy4aa' 
+REPO_NAME = 'dump_image' 
+BRANCH = 'main'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 def read_all_user():
     try:
@@ -18,16 +31,12 @@ def read_user(id):
 
 def create_user(data):
     try:
-        new_user = User.create(data)
-        
+        new_user = User.create(data)        
         if 'pass' in new_user:
             del new_user['pass']
-
         return jsonify(new_user), 201
-
     except errors.UniqueViolation as e:
         return jsonify({"error": "Username atau email sudah terdaftar."}), 409 # 
-
     except Exception as e:
         return jsonify({"error": "Terjadi kesalahan pada server", "details": str(e)}), 500
     
@@ -54,8 +63,7 @@ def update_user_profile(user_id,data):
     try:
         for field in ['pass', 'point', 'role', 'status', 'id']:
             if field in data:
-                del data[field]
-        
+                del data[field]        
         if not data:
             return jsonify({"success": False, "error": "Tidak ada data valid untuk diperbarui."}), 400
 
@@ -68,3 +76,61 @@ def update_user_profile(user_id,data):
 
     except Exception as e:
         return jsonify({"success": False, "error": "Terjadi kesalahan internal pada server", "details": str(e)}), 500
+
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def upload_to_github(file):
+    try:
+        filename = secure_filename(file.filename)
+        unique_filename = f"profile_pictures/{datetime.now().strftime('%Y%m%d%H%M%S')}_{filename}"
+        content = base64.b64encode(file.read()).decode('utf-8')
+        url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{unique_filename}"       
+        headers = {
+            "Authorization": f"Bearer {GITHUB_TOKEN}",
+            "Accept": "application/vnd.github+json"
+        }
+        data = {
+            "message": f"Upload profile picture: {filename}",
+            "content": content,
+            "branch": BRANCH
+        }
+        response = requests.put(url, headers=headers, json=data)
+        response.raise_for_status()
+        return f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/{BRANCH}/{unique_filename}"
+    except requests.exceptions.RequestException as e:
+        error_details = e.response.json().get('message', 'Unknown API error')
+        print(f"GitHub API error: {error_details}")
+        raise Exception(f"Gagal mengunggah ke GitHub: {error_details}")
+    except Exception as e:
+        print(f"An unexpected error occurred during upload: {e}")
+        raise e
+    
+def get_user_profile_picture(user_id):
+    try:
+        result, status_code = User.get_profile_picture(user_id)
+        return jsonify(result), status_code
+    except Exception as e:
+        print(f"Controller error in get_user_profile_picture: {e}")
+        return jsonify({"success": False, "error": "Terjadi kesalahan pada server."}), 500
+
+
+@jwt_required()
+def update_my_profile_picture():
+    try:
+        current_user_id = get_jwt_identity()
+        if 'profile_picture' not in request.files:
+            return jsonify({"success": False, "error": "Tidak ada file gambar yang diunggah. Gunakan key 'profile_picture'."}), 400            
+        file = request.files['profile_picture']
+        if file.filename == '':
+            return jsonify({"success": False, "error": "Nama file tidak boleh kosong."}), 400
+        if not allowed_file(file.filename):
+            return jsonify({"success": False, "error": f"Tipe file tidak valid. Pilihan yang diizinkan: {list(ALLOWED_EXTENSIONS)}"}), 400
+        image_url = upload_to_github(file)
+        result, status_code = User.update_profile_picture(current_user_id, image_url)
+        return jsonify(result), status_code
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Gagal memperbarui foto profil: {str(e)}"}), 500

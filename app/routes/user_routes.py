@@ -46,4 +46,4 @@ def get_user_profle_img():
 @user_bp.route('/me/profile-picture', methods=['POST'])
 @jwt_required()
 def update_user_profile_img():
-    return get_user_profile_picture(get_jwt_identity())
+    return update_my_profile_picture()

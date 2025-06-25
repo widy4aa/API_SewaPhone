@@ -269,7 +269,7 @@ class User:
         try:
             query = """
                 UPDATE users
-                SET pp_link_img = %s
+                SET pp_img_link = %s
                 WHERE id = %s
                 RETURNING id, username, pp_link_img;
             """

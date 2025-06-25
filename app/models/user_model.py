@@ -260,7 +260,7 @@ class User:
                 conn.close()
                 
     @staticmethod
-    def update_profile_picture(user_id, pp_link_img):
+    def update_profile_picture(user_id, pp_img_link):
         """
         Memperbarui link gambar profil (pp_link_img) untuk user tertentu.
         """
@@ -271,11 +271,10 @@ class User:
                 UPDATE users
                 SET pp_img_link = %s
                 WHERE id = %s
-                RETURNING id, username, pp_link_img;
+                RETURNING id, username, pp_img_link;
             """
-            
             print(query)
-            cursor.execute(query, (pp_link_img, user_id))
+            cursor.execute(query, (pp_img_link, user_id))
             updated_user = cursor.fetchone()
             
             if not updated_user:

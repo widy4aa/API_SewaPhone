@@ -273,6 +273,8 @@ class User:
                 WHERE id = %s
                 RETURNING id, username, pp_link_img;
             """
+            
+            print(query)
             cursor.execute(query, (pp_link_img, user_id))
             updated_user = cursor.fetchone()
             

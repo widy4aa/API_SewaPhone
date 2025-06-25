@@ -9,7 +9,6 @@ from app.controllers.user_controller import (
     update_my_profile_picture,
     get_user_profile_picture,
     update_user_point_by_id,
-    change_user_password
 )
 
 
@@ -57,10 +56,3 @@ def update_user_profile_img():
 def update_user_point_by_id_route(user_id):
     return update_user_point_by_id(user_id)
 
-@user_bp.route('/me/change-password', methods=['PUT'])
-@jwt_required()
-def change_password_route():
-    data = request.get_json()
-    if not data or 'new_password' not in data:
-        return jsonify({"success": False, "error": "Field 'new_password' wajib dikirim."}), 400
-    return change_user_password(get_jwt_identity(), data['new_password'])
